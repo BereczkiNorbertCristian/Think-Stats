@@ -1,44 +1,107 @@
+"""This file contains code used in "Think Stats",
+by Allen B. Downey, available from greenteapress.com
+
+Copyright 2010 Allen B. Downey
+License: GNU GPLv3 http://www.gnu.org/licenses/gpl.html
+"""
+
 import survey
 
+# copying Mean from thinkstats.py so we don't have to deal with
+# importing anything in Chapter 1
 
-def getPregnancyLengths(lst):
-	return [el.prglength for el in lst]
+def Mean(t):
+    """Computes the mean of a sequence of numbers.
 
-def mean(lst):
-	return float(sum(getPregnancyLengths(lst)))/len(lst) 
+    Args:
+        t: sequence of numbers
 
-def GetFirstsOthers():
-	table = survey.Pregnancies()
-	table.ReadRecords()
-	firsts,others = [],[]
-	
-	for preg in table.records:
-		if preg.outcome!= 1:
-			continue
-		if preg.birthord == 1:
-			firsts.append(preg)
-		else:
-			others.append(preg)
-	
-	return firsts,others
+    Returns:
+        float
+    """
+    return float(sum(t)) / len(t)
 
-def main():
 
-	table = survey.Pregnancies()
-	table.ReadRecords()
-	print 'Number of pregnancies', len(table.records)
-	ans = 0
-	for preg in table.records:
-		if preg.outcome == 1:
-			ans+=1
-	print 'Number of live pregnancies', ans	
+def PartitionRecords(table):
+    """Divides records into two lists: first babies and others.
 
-	firsts,others = GetFirstsOthers()
-	
-	print 'Firsts Len', len(firsts)
-	print 'Others Len', len(others)
+    Only live births are included
 
-	print 'Firsts Mean', mean(firsts)
-	print 'Others Mean', mean(others)
+    Args:
+        table: pregnancy Table
+    """
+    firsts = survey.Pregnancies()
+    others = survey.Pregnancies()
 
-main()
+    for p in table.records:
+        # skip non-live births
+        if p.outcome != 1:
+            continue
+
+        if p.birthord == 1:
+            firsts.AddRecord(p)
+        else:
+            others.AddRecord(p)
+
+    return firsts, others
+
+
+def Process(table):
+    """Runs analysis on the given table.
+    
+    Args:
+        table: table object
+    """
+    table.lengths = [p.prglength for p in table.records]
+    table.n = len(table.lengths)
+    table.mu = Mean(table.lengths)
+
+
+def MakeTables(data_dir='.'):
+    """Reads survey data and returns tables for first babies and others."""
+    table = survey.Pregnancies()
+    table.ReadRecords(data_dir)
+
+    firsts, others = PartitionRecords(table)
+    
+    return table, firsts, others
+
+
+def ProcessTables(*tables):
+    """Processes a list of tables
+    
+    Args:
+        tables: gathered argument tuple of Tuples
+    """
+    for table in tables:
+        Process(table)
+        
+        
+def Summarize(data_dir):
+    """Prints summary statistics for first babies and others.
+    
+    Returns:
+        tuple of Tables
+    """
+    table, firsts, others = MakeTables(data_dir)
+    ProcessTables(firsts, others)
+        
+    print 'Number of first babies', firsts.n
+    print 'Number of others', others.n
+
+    mu1, mu2 = firsts.mu, others.mu
+
+    print 'Mean gestation in weeks:' 
+    print 'First babies', mu1 
+    print 'Others', mu2
+    
+    print 'Difference in days', (mu1 - mu2) * 7.0
+
+
+def main(name, data_dir='.'):
+    Summarize(data_dir)
+    
+
+if __name__ == '__main__':
+    import sys
+    main(*sys.argv)
